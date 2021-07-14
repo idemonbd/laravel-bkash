@@ -4,21 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class PaymentController extends Controller
 {
     public function token(Request $request)
     {
-        $token = $this->_bkash_Get_Token();
-        
-        $request->session()->put('token', $token['id_token']);
+        $token = $this->_get_token();
 
-        echo $token['id_token'];
+        Session::forget('bkash_token');
+        Session::put('bkash_token', $token['id_token']);
+        
+        return response(['success' => true]);
     }
 
-    protected function _bkash_Get_Token()
+    protected function _get_token()
     {
-        $array = $this->_get_config_file();
+        $array = $this->_get_config();
 
         $data = array(
             'app_key' => $array["app_key"],
@@ -44,7 +46,7 @@ class PaymentController extends Controller
         return json_decode($resultdata, true);
     }
 
-    protected function _get_config_file()
+    protected function _get_config()
     {
         $path = storage_path() . "/app/public/config.json";
         return json_decode(file_get_contents($path), true);
@@ -53,7 +55,7 @@ class PaymentController extends Controller
     public function createpayment(Request $request)
     {
 
-        $array = $this->_get_config_file();
+        $array = $this->_get_config();
 
         $amount = $request->amount;
         $invoice = $request->invoice; // must be unique
@@ -82,7 +84,7 @@ class PaymentController extends Controller
 
     public function executepayment(Request $request)
     {
-        $array = $this->_get_config_file();
+        $array = $this->_get_config();
 
         $paymentID = $request->paymentID;
 

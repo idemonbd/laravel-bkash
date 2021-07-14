@@ -22,6 +22,7 @@
 <body>
 
     <div class="container">
+        {{ request()->session()->get('token') }}
         <div class="row">
             <div class="col-md-12">
                 <div class="card mt-5">
@@ -51,126 +52,7 @@
     <script id="myScript" src="https://scripts.sandbox.bka.sh/versions/1.2.0-beta/checkout/bKash-checkout-sandbox.js">
     </script>
 
-    <script>
-        var accessToken = '';
-
-        $(document).ready(function() {
-            console.log('Setup Ajax Header');
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-            console.log('Ajax Header Setup Done');
-
-            console.log('Ajax call to server for get access token');
-            $.ajax({
-                url: "{!! route('token') !!}",
-                type: 'POST',
-                contentType: 'application/json',
-                success: function(data) {
-                    console.log('Got the token form server successfully');
-                    console.log(JSON.stringify(data));
-
-                    console.log('Setting access token var');
-                    accessToken = JSON.stringify(data);
-                },
-                error: function() {
-                    console.log('Ajax response Error:: dont get token from server');
-
-                }
-            });
-
-            // CreatePayment and Execute Payment route 
-            var paymentConfig = {
-                createCheckoutURL: "{!! route('createpayment') !!}",
-                executeCheckoutURL: "{!! route('executepayment') !!}"
-            };
-
-            // Execute order post data
-            var paymentRequest;
-            paymentRequest = {
-                amount: $('.amount').text(),
-                intent: 'sale',
-                invoice: $('.invoice').text()
-            };
-            console.log('Prepare createPayment post data');
-            console.log(JSON.stringify(paymentRequest));
-
-            bKash.init({
-                paymentMode: 'checkout',
-                paymentRequest: paymentRequest,
-                createRequest: function(request) {
-                    // when click pay with bkash this will call
-                    console.log('Call createPayment Request to server with::');
-                    console.log(request);
-
-                    $.ajax({
-                        url: paymentConfig.createCheckoutURL + "?amount=" + paymentRequest
-                            .amount + "&invoice=" + paymentRequest.invoice,
-                        type: 'GET',
-                        contentType: 'application/json',
-                        success: function(data) {
-                            console.log('CreatePayment Success::');
-                            console.log(JSON.stringify(data));
-
-                            var obj = JSON.parse(data);
-
-                            if (data && obj.paymentID != null) {
-                                paymentID = obj.paymentID;
-                                bKash.create().onSuccess(obj);
-                            } else {
-                                console.log('Error On CreatePayment Request');
-                                bKash.create().onError();
-                            }
-                        },
-                        error: function() {
-                            console.log('Error On CreatePayment Request');
-                            bKash.create().onError();
-                        }
-                    });
-                },
-
-                executeRequestOnAuthorization: function() {
-                    console.log('Payment exicute ajax calling');
-                    $.ajax({
-                        url: paymentConfig.executeCheckoutURL + "?paymentID=" + paymentID,
-                        type: 'GET',
-                        contentType: 'application/json',
-                        success: function(data) {
-                            console.log('got data from execute');
-                            console.log(JSON.stringify(data));
-
-                            data = JSON.parse(data);
-                            if (data && data.paymentID != null) {
-                                alert('Payment Successfull : ' + JSON.stringify(data));
-                                window.location.href = "{!! route('orders.index') !!}";
-                            } else {
-                                console.log('error when executing payment');
-                                bKash.execute().onError();
-                            }
-                        },
-                        error: function() {
-                            console.log('error when executing payment');
-                            bKash.execute().onError();
-                        }
-                    });
-                }
-            });
-
-            console.log("End of document ready state");
-        });
-
-        function callReconfigure(val) {
-            console.log('call reconfigure function');
-            bKash.reconfigure(val);
-        }
-
-        function clickPayButton() {
-            console.log('triggering bkash payment button');
-            $("#bKash_button").trigger('click');
-        }
-    </script>
+    @include('scripts')
 </body>
 
 </html>
